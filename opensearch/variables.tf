@@ -56,6 +56,12 @@ variable "high_availability" {
   type        = bool
 }
 
+variable "allowed_security_group_ids" {
+  description = "Extra security group IDs allowed HTTPS ingress to this OpenSearch domain, in addition to the domain's own self-referencing rule (e.g. an EKS cluster's node security group, so pods/nodes can actually reach it - confirmed via a live connection test that nothing external could reach OpenSearch without this)."
+  type        = list(string)
+  default     = []
+}
+
 variable "auto_tune_maintenance_start_at" {
   description = <<-EOT
     Start time (RFC3339) for Auto-Tune's first scheduled maintenance window;

@@ -29,6 +29,21 @@ resource "aws_security_group" "opensearch" {
     self        = true
   }
 
+  # Previously this security group only allowed traffic from itself - nothing
+  # outside it (e.g. an EKS cluster's node security group) could ever reach
+  # OpenSearch at all. allowed_security_group_ids lets a caller grant specific
+  # external security groups access instead of only self-referencing traffic.
+  dynamic "ingress" {
+    for_each = var.allowed_security_group_ids
+    content {
+      description     = "Allow HTTPS from an explicitly allowed security group"
+      from_port       = 443
+      to_port         = 443
+      protocol        = "tcp"
+      security_groups = [ingress.value]
+    }
+  }
+
   egress {
     from_port   = 0
     to_port     = 0
