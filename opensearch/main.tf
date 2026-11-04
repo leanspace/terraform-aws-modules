@@ -121,7 +121,7 @@ module "opensearch" {
 
     maintenance_schedule = [
       {
-        start_at                       = "2025-06-13T07:44:12Z"
+        start_at                       = var.auto_tune_maintenance_start_at
         cron_expression_for_recurrence = "cron(0 0 ? * 1 *)"
         duration = {
           value = "2"

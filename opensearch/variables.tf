@@ -55,3 +55,17 @@ variable "high_availability" {
   description = "Enable high availability for the OpenSearch cluster"
   type        = bool
 }
+
+variable "auto_tune_maintenance_start_at" {
+  description = <<-EOT
+    Start time (RFC3339) for Auto-Tune's first scheduled maintenance window;
+    subsequent occurrences follow cron_expression_for_recurrence in main.tf, so
+    this only matters as the seed for that first occurrence. AWS rejects a
+    start_at that's already in the past, so this defaults far enough in the
+    future to never go stale - previously a hardcoded near-term date here
+    caused CreateDomain to fail once that date passed. Override only if the
+    exact first-occurrence time actually matters for your use case.
+  EOT
+  type        = string
+  default     = "2099-01-01T00:00:00Z"
+}
