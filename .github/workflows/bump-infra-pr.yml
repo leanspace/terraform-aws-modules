@@ -1,0 +1,71 @@
+name: Open infra version-bump PR
+
+# Triggered by tag-release.yml's tag push. Pins every terraform-aws-modules
+# module source in terraform-aws-infra to the new tag and opens a PR there -
+# never merges it automatically. terraform-aws-infra's own validate.yml runs
+# on the PR; if the module change needs a matching change there (new required
+# variable, renamed output, etc.), push additional commits to the PR's branch
+# to fix it up before merging.
+#
+# Needs LEANSPACE_BOT_TOKEN, not GITHUB_TOKEN: the default token is scoped
+# only to this repo and can't push branches or open PRs in terraform-aws-infra.
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+jobs:
+  bump-infra:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout terraform-aws-infra
+        uses: actions/checkout@v4
+        with:
+          repository: leanspace/terraform-aws-infra
+          token: ${{ secrets.LEANSPACE_BOT_TOKEN }}
+          path: terraform-aws-infra
+
+      - name: Pin module sources to ${{ github.ref_name }}
+        working-directory: terraform-aws-infra
+        run: |
+          tag="${{ github.ref_name }}"
+          sed -i -E "s#(github\.com/leanspace/terraform-aws-modules\.git//[^\"?]+\?ref=)[^\"]+#\1${tag}#g" -- *.tf
+          echo "Changed files:"
+          git diff --stat
+
+      - name: Open pull request
+        working-directory: terraform-aws-infra
+        env:
+          GH_TOKEN: ${{ secrets.LEANSPACE_BOT_TOKEN }}
+        run: |
+          tag="${{ github.ref_name }}"
+          branch="bump-terraform-aws-modules-${tag}"
+
+          if git diff --quiet; then
+            echo "No module source references changed for ${tag} - nothing to open a PR for."
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git checkout -b "$branch"
+          git add -- '*.tf'
+          git commit -m "Bump terraform-aws-modules to ${tag}"
+          git push -u origin "$branch" --force
+
+          gh pr create \
+            --repo leanspace/terraform-aws-infra \
+            --base main \
+            --head "$branch" \
+            --title "Bump terraform-aws-modules to ${tag}" \
+            --body "$(cat <<EOF
+          Auto-generated: pins every \`terraform-aws-modules\` module source in this
+          root to [\`${tag}\`](https://github.com/leanspace/terraform-aws-modules/releases/tag/${tag}).
+
+          **Before merging:** check the \`validate\` CI check on this PR. If the
+          module change needs a corresponding change here (new required variable,
+          renamed output, etc.), push additional commits to this branch
+          (\`${branch}\`) to fix it up before merging - don't merge on a failing check.
+          EOF
+          )"

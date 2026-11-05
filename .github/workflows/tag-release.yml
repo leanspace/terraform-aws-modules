@@ -1,0 +1,44 @@
+name: Tag release
+
+# Every merge to main gets an auto-incrementing patch tag (vX.Y.Z -> vX.Y.(Z+1),
+# starting at v0.1.0 if none exist yet). No commit-message convention to parse -
+# this org uses TICKET-ID: prefixes, not Conventional Commits, so there's no
+# reliable signal here for a semantic (major/minor) bump; patch-only keeps this
+# simple and predictable. A tag push (not this workflow's own commits - it makes
+# none) is what bump-infra-pr.yml reacts to.
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  tag:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Compute next patch version
+        id: bump
+        run: |
+          latest=$(git tag -l 'v*.*.*' | sort -V | tail -n1)
+          if [ -z "$latest" ]; then
+            new_tag="v0.1.0"
+          else
+            IFS='.' read -r major minor patch <<< "${latest#v}"
+            new_tag="v${major}.${minor}.$((patch + 1))"
+          fi
+          echo "Latest tag: ${latest:-none}, new tag: $new_tag"
+          echo "new_tag=$new_tag" >> "$GITHUB_OUTPUT"
+
+      - name: Create and push tag
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag "${{ steps.bump.outputs.new_tag }}"
+          git push origin "${{ steps.bump.outputs.new_tag }}"
