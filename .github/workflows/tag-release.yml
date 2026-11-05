@@ -6,14 +6,21 @@ name: Tag release
 # reliable signal here for a semantic (major/minor) bump; patch-only keeps this
 # simple and predictable. A tag push (not this workflow's own commits - it makes
 # none) is what bump-infra-pr.yml reacts to.
+#
+# Pushes the tag using LEANSPACE_BOT_TOKEN, not GITHUB_TOKEN: GitHub never lets
+# a push/tag made with the default token trigger other workflows (anti-loop
+# protection), so a GITHUB_TOKEN-pushed tag here would silently never reach
+# bump-infra-pr.yml's `on: push: tags` listener - confirmed empirically (two
+# tags got created, zero bump-infra-pr.yml runs, until this was fixed).
 
 on:
   push:
     branches:
       - main
 
-permissions:
-  contents: write
+# No GITHUB_TOKEN permissions needed: the tag push explicitly uses
+# LEANSPACE_BOT_TOKEN instead (see above).
+permissions: {}
 
 jobs:
   tag:
@@ -22,6 +29,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          token: ${{ secrets.LEANSPACE_BOT_TOKEN }}
 
       - name: Compute next patch version
         id: bump
