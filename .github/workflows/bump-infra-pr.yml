@@ -15,6 +15,11 @@ on:
     tags:
       - "v*.*.*"
 
+# No GITHUB_TOKEN permissions needed at all: this job never checks out its own
+# repo, and the only checkout (of terraform-aws-infra) explicitly uses
+# LEANSPACE_BOT_TOKEN instead.
+permissions: {}
+
 jobs:
   bump-infra:
     runs-on: ubuntu-latest
