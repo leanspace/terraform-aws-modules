@@ -8,10 +8,17 @@ module "eks_cluster" {
 
   cluster_enabled_log_types = var.eks_log_types
 
-  cluster_endpoint_private_access          = var.eks_private_access
-  cluster_endpoint_public_access           = true
-  cluster_endpoint_public_access_cidrs     = var.eks_public_access_cidrs
-  enable_cluster_creator_admin_permissions = true
+  cluster_endpoint_private_access      = var.eks_private_access
+  cluster_endpoint_public_access       = true
+  cluster_endpoint_public_access_cidrs = var.eks_public_access_cidrs
+
+  # Deliberately false: this flag grants admin to whoever's *session* runs apply, recomputed
+  # every time - not a fixed identity. With CI (github-deployment-role) and humans both
+  # applying, it churns the access entry on every run that isn't the same caller as last time,
+  # and would collide with a caller also listed in the consuming root's explicit admin-entries
+  # (extra_admin_role_arns in terraform-aws-infra). Admin access is managed explicitly there
+  # instead, via aws_eks_access_entry/aws_eks_access_policy_association resources.
+  enable_cluster_creator_admin_permissions = false
 
   create_cluster_security_group = true
 
