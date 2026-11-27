@@ -7,8 +7,9 @@ name: Open infra version-bump PR
 # variable, renamed output, etc.), push additional commits to the PR's branch
 # to fix it up before merging.
 #
-# Needs LEANSPACE_BOT_TOKEN, not GITHUB_TOKEN: the default token is scoped
+# Needs LEANSPACE_TERRAFRM_AWS_INFRA_WRITE_PR_TK, not GITHUB_TOKEN: the default token is scoped
 # only to this repo and can't push branches or open PRs in terraform-aws-infra.
+# Fine-grained PAT: Contents: write; Pull requests: write on leanspace/terraform-aws-infra.
 
 on:
   push:
@@ -17,7 +18,7 @@ on:
 
 # No GITHUB_TOKEN permissions needed at all: this job never checks out its own
 # repo, and the only checkout (of terraform-aws-infra) explicitly uses
-# LEANSPACE_BOT_TOKEN instead.
+# LEANSPACE_TERRAFRM_AWS_INFRA_WRITE_PR_TK instead.
 permissions: {}
 
 jobs:
@@ -28,7 +29,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: leanspace/terraform-aws-infra
-          token: ${{ secrets.LEANSPACE_BOT_TOKEN }}
+          token: ${{ secrets.LEANSPACE_TERRAFRM_AWS_INFRA_WRITE_PR_TK }}
           path: terraform-aws-infra
 
       - name: Pin module sources to ${{ github.ref_name }}
@@ -42,7 +43,7 @@ jobs:
       - name: Open pull request
         working-directory: terraform-aws-infra
         env:
-          GH_TOKEN: ${{ secrets.LEANSPACE_BOT_TOKEN }}
+          GH_TOKEN: ${{ secrets.LEANSPACE_TERRAFRM_AWS_INFRA_WRITE_PR_TK }}
         run: |
           tag="${{ github.ref_name }}"
           branch="bump-terraform-aws-modules-${tag}"
